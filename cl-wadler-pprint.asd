@@ -4,7 +4,7 @@
   :license "Apache-2.0/MIT"
   :version "0.0.1"
   :serial t
-  :depends-on (#:trivia)
+  :depends-on ()
   :in-order-to ((test-op (test-op #:cl-wadler-pprint/test)))
   :components ((:file "package")
                (:file "wadler-pprint")))

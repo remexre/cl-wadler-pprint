@@ -115,16 +115,19 @@
   (when docs
     (destructuring-bind ((i . doc) . tl) docs
       (check-type i fixnum)
-      (ematch doc
-        (nil                    (be width posn tl))
-        ((cons x y)             (be width posn `((,i . ,x)
-                                                 (,i . ,y)
-                                                 ,@tl)))
-        ((nest :width j :doc x) (be width posn (cons (cons (+ i j) x) tl)))
-        ((text :string s)       (cons s (be width (+ posn (length s)) tl)))
-        ((eq +newline+)         (cons i (be width i tl)))
-        ((union-doc lhs rhs)    (better width posn (be width posn (cons (cons i lhs) tl))
-                                                   (be width posn (cons (cons i rhs) tl))))))))
+      (cond
+        ((null doc)         (be width posn tl))
+        ((consp doc)        (be width posn `((,i . ,(car doc))
+                                             (,i . ,(cdr doc))
+                                             ,@tl)))
+        ((nest-p doc)       (be width posn (cons (cons (+ i (nest-width doc)) (nest-doc doc))
+                                                 tl)))
+        ((text-p doc)       (cons (text-string doc)
+                                  (be width (+ posn (length (text-string doc))) tl)))
+        ((eq doc +newline+) (cons i (be width i tl)))
+        ((union-doc-p doc)  (better width posn
+                                    (be width posn (cons (cons i (union-doc-lhs doc)) tl))
+                                    (be width posn (cons (cons i (union-doc-rhs doc)) tl))))))))
 
 (defun better (width posn x y)
   (if (fits (- width posn) x) x y))
