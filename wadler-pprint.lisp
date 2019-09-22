@@ -5,7 +5,7 @@
 ;;;
 
 (defun join (list sep)
-  (cdr (loop for x in list nconcing (list sep list))))
+  (cdr (loop for x in list nconcing (list sep x))))
 
 ;;;
 ;;; The structs used to represent documents.
@@ -18,7 +18,8 @@
 (defstruct text
   (string (error "Must provide STRING") :type string))
 
-(defconstant +newline+ '+newline+)
+(defstruct newline
+  (string (error "Must provide STRING") :type string))
 
 (defstruct union-doc
   (lhs (error "Must provide LHS") :type doc)
@@ -37,7 +38,7 @@
   (or (typep doc 'nest)
       (and (typep doc 'text)
            (not (find #\newline (text-string doc))))
-      (eq doc '+newline+)
+      (typep doc 'newline)
       (and (typep doc 'union-doc)
            (docp (union-doc-lhs doc))
            (docp (union-doc-rhs doc)))
@@ -47,7 +48,7 @@
 
 (deftype doc ()
   "An imprecise check for whether a value is a document."
-  '(or nest text (eql '+newline+) union-doc flatten list))
+  '(or nest text newline union-doc flatten list))
  
 ;;;
 ;;; Creation of a document.
@@ -63,7 +64,11 @@
   (join
     (mapcar (lambda (str) (make-text :string str))
             (uiop:split-string str :separator #(#\newline)))
-    +newline+))
+    (newline-or " ")))
+
+(defun newline-or (str)
+  (assert (not (find #\newline str)))
+  (make-newline :string str))
 
 (defun group (&rest doc)
   (make-union-doc
@@ -72,15 +77,15 @@
 
 (defun flatten (doc)
   (cond
-    ((null doc)         nil)
-    ((consp doc)        (cons (flatten (car doc))
-                              (flatten (cdr doc))))
-    ((nest-p doc)       (make-nest :width (nest-width doc)
-                                   :doc   (flatten (nest-doc doc))))
-    ((text-p doc)       doc)
-    ((eq doc +newline+) (make-text :string " "))
-    ((union-doc-p doc)  (flatten (union-doc-lhs doc)))
-    (t                  (error 'type-error :datum doc :expected-type 'doc))))
+    ((null doc)        nil)
+    ((consp doc)       (cons (flatten (car doc))
+                             (flatten (cdr doc))))
+    ((nest-p doc)      (make-nest :width (nest-width doc)
+                                  :doc   (flatten (nest-doc doc))))
+    ((text-p doc)      doc)
+    ((newline-p doc)   (make-text :string (newline-string doc)))
+    ((union-doc-p doc) (flatten (union-doc-lhs doc)))
+    (t                 (error 'type-error :datum doc :expected-type 'doc))))
 
 ;;;
 ;;; Document construction helpers.
@@ -89,15 +94,15 @@
 (defun bracket (l r &rest body)
   (group
     (list (text l)
-          (nest 2 (cons +newline+ body))
-          +newline+
+          (nest 2 (cons (newline-or "") body))
+          (newline-or "")
           (text r))))
 
 (defun spread (&rest docs)
   (join docs (text " ")))
 
 (defun stack (&rest docs)
-  (join docs +newline+))
+  (join docs (newline-or " ")))
 
 ;;;
 ;;; Layout of documents.
@@ -117,18 +122,18 @@
     (destructuring-bind ((i . doc) . tl) docs
       (check-type i fixnum)
       (cond
-        ((null doc)         (be width posn tl))
-        ((consp doc)        (be width posn `((,i . ,(car doc))
-                                             (,i . ,(cdr doc))
-                                             ,@tl)))
-        ((nest-p doc)       (be width posn (cons (cons (+ i (nest-width doc)) (nest-doc doc))
-                                                 tl)))
-        ((text-p doc)       (cons (text-string doc)
-                                  (be width (+ posn (length (text-string doc))) tl)))
-        ((eq doc +newline+) (cons i (be width i tl)))
-        ((union-doc-p doc)  (better width posn
-                                    (be width posn (cons (cons i (union-doc-lhs doc)) tl))
-                                    (be width posn (cons (cons i (union-doc-rhs doc)) tl))))
+        ((null doc)        (be width posn tl))
+        ((consp doc)       (be width posn `((,i . ,(car doc))
+                                            (,i . ,(cdr doc))
+                                            ,@tl)))
+        ((nest-p doc)      (be width posn (cons (cons (+ i (nest-width doc)) (nest-doc doc))
+                                                tl)))
+        ((text-p doc)      (cons (text-string doc)
+                                 (be width (+ posn (length (text-string doc))) tl)))
+        ((newline-p doc)   (cons i (be width i tl)))
+        ((union-doc-p doc) (better width posn
+                                   (be width posn (cons (cons i (union-doc-lhs doc)) tl))
+                                   (be width posn (cons (cons i (union-doc-rhs doc)) tl))))
         (t
          (error 'type-error :datum doc :expected-type 'doc))))))
 
@@ -155,7 +160,7 @@
         ((text-p doc)
          (push (text-string doc) out)
          (go continue))
-        ((eq doc +newline+)
+        ((newline-p doc)
          (push i out)
          (go continue))
         ; Documents that decompose to a single document.

@@ -1,4 +1,4 @@
 (defpackage #:wadler-pprint
   (:use #:cl)
-  (:export #:+newline+ #:bracket #:group #:nest #:pretty #:pretty-object
+  (:export #:bracket #:group #:nest #:newline-or #:pretty #:pretty-object
            #:spread #:stack #:text))

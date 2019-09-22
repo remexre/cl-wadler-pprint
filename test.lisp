@@ -36,7 +36,7 @@
       (pp-tree-1 (car list))
       (list (pp-tree-1 (car list))
             (text ",")
-            +newline+
+            (newline-or " ")
             (pp-trees-1 (cdr list)))))
 
 (defparameter +tree-pretty-2+
@@ -60,8 +60,8 @@
 (defun pp-bracket-tree-2 (list)
   (when list
     (list (text "[")
-          (nest 2 (list +newline+ (pp-trees-2 list)))
-          +newline+
+          (nest 2 (list (newline-or " ") (pp-trees-2 list)))
+          (newline-or " ")
           (text "]"))))
 
 (defun pp-trees-2 (list)
@@ -69,7 +69,7 @@
       (pp-tree-2 (car list))
       (list (pp-tree-2 (car list))
             (text ",")
-            +newline+
+            (newline-or " ")
             (pp-trees-2 (cdr list)))))
 
 (def-test tree-1 ()
