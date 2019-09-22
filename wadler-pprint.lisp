@@ -34,7 +34,8 @@
 (defun docp (doc)
   "Returns whether the given value is a document."
   ; TODO: Currently non-total on improper lists.
-  (or (and (typep doc 'text)
+  (or (typep doc 'nest)
+      (and (typep doc 'text)
            (not (find #\newline (text-string doc))))
       (eq doc '+newline+)
       (and (typep doc 'union-doc)
@@ -46,7 +47,7 @@
 
 (deftype doc ()
   "An imprecise check for whether a value is a document."
-  '(or text (eql '+newline+) union-doc flatten list))
+  '(or nest text (eql '+newline+) union-doc flatten list))
  
 ;;;
 ;;; Creation of a document.
@@ -127,7 +128,56 @@
         ((eq doc +newline+) (cons i (be width i tl)))
         ((union-doc-p doc)  (better width posn
                                     (be width posn (cons (cons i (union-doc-lhs doc)) tl))
-                                    (be width posn (cons (cons i (union-doc-rhs doc)) tl))))))))
+                                    (be width posn (cons (cons i (union-doc-rhs doc)) tl))))
+        (t
+         (error 'type-error :datum doc :expected-type 'doc))))))
+
+(defun first-layout (docs)
+  (check-type docs list)
+  (let (doc i out)
+    (tagbody
+      continue
+
+      ; Exit if we're at the end of the loop.
+      (unless docs
+        (go break))
+
+      ; Set up the loop variables.
+      (setf i (caar docs))
+      (setf doc (cdar docs))
+      (setf docs (cdr docs))
+
+      redo
+      (cond
+        ; Documents that are consumed.
+        ((null doc)
+         (go continue))
+        ((text-p doc)
+         (push (text-string doc) out)
+         (go continue))
+        ((eq doc +newline+)
+         (push i out)
+         (go continue))
+        ; Documents that decompose to a single document.
+        ((nest-p doc)
+         (incf i (nest-width doc))
+         (setf doc (nest-doc doc))
+         (go redo))
+        ((union-doc-p doc)
+         (setf doc (union-doc-lhs doc))
+         (go redo))
+        ; Conses also push a document to the queue.
+        ((consp doc)
+         (push (cons i (cdr doc)) docs)
+         (setf doc (car doc))
+         (go redo))
+        ; If it's unknown, we wanna bail out.
+        (t
+         (error 'type-error :datum doc :expected-type 'doc)))
+
+      ; The final return.
+      break)
+    (nreverse out)))
 
 (defun better (width posn x y)
   (if (fits (- width posn) x) x y))
@@ -160,7 +210,7 @@
                     (stream-output-width stream))))
   (check-type width (or null fixnum))
 
-  (let ((layout-doc (best width 0 doc)))
+  (let ((layout-doc (if width (best width 0 doc) (first-layout (list (cons 0 doc))))))
     (if stream
         (loop
           for part in layout-doc
