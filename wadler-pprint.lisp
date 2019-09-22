@@ -61,8 +61,10 @@
 (defmethod pretty-object ((obj cons))
   (group
     (text "(")
-    (pretty-object (car obj))
-    (nest 1 (pretty-tail (cdr obj)))))
+    (nest 1
+      (pretty-object (car obj))
+      (pretty-tail (cdr obj)))
+    (text ")")))
 
 (defun pretty-tail (obj)
   (cond
@@ -72,17 +74,16 @@
        (pretty-object (car obj))
        (pretty-tail (cdr obj))))
     ((null obj)
-     (text ")"))
+     nil)
     (t
      (list (newline-or " ")
            (text ". ")
-           (pretty-object obj)
-           (text ")")))))
+           (pretty-object obj)))))
 
 (defmethod pretty-object ((obj t))
   (text (format nil "~s" obj)))
 
-(defun nest (width doc)
+(defun nest (width &rest doc)
   (make-nest :width width :doc doc))
 
 (defun text (str)
@@ -227,9 +228,6 @@
   "Pretty-prints a DOCument to the given STREAM, with the given WIDTH."
 
   (check-type stream (or null string (member t) stream))
-
-  (unless (typep doc 'doc)
-    (setf doc (pretty-object doc)))
   (check-type doc doc)
 
   (unless width

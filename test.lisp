@@ -86,3 +86,17 @@
 (def-test tree-2-no-width ()
   ; The same still, since there aren't any groups present.
   (is (equal +tree-pretty-2+ (pretty nil (pp-tree-2 +tree+)))))
+
+(defvar +test-list+ '(a simple example list))
+
+(def-test list-1 ()
+  (is (equal "(A SIMPLE EXAMPLE LIST)" (pretty nil (pretty-object +test-list+)))))
+
+(defvar +list-pretty-2+
+  "(A
+ SIMPLE
+ EXAMPLE
+ LIST)")
+
+(def-test list-2 ()
+  (is (equal +list-pretty-2+ (pretty nil (pretty-object +test-list+) :width 20))))
