@@ -49,13 +49,38 @@
 (deftype doc ()
   "An imprecise check for whether a value is a document."
   '(or nest text newline union-doc flatten list))
- 
+
 ;;;
 ;;; Creation of a document.
 ;;;
 
 (defgeneric pretty-object (object)
   (:documentation "Converts an object to a document."))
+
+; TODO: Support for circular lists
+(defmethod pretty-object ((obj cons))
+  (group
+    (text "(")
+    (pretty-object (car obj))
+    (nest 1 (pretty-tail (cdr obj)))))
+
+(defun pretty-tail (obj)
+  (cond
+    ((consp obj)
+     (list
+       (newline-or " ")
+       (pretty-object (car obj))
+       (pretty-tail (cdr obj))))
+    ((null obj)
+     (text ")"))
+    (t
+     (list (newline-or " ")
+           (text ". ")
+           (pretty-object obj)
+           (text ")")))))
+
+(defmethod pretty-object ((obj t))
+  (text (format nil "~s" obj)))
 
 (defun nest (width doc)
   (make-nest :width width :doc doc))
@@ -223,7 +248,7 @@
           do (cond
                ((stringp part)
                 (princ part stream))
-               (t 
+               (t
                 (terpri stream)
                 (dotimes (i part)
                   (princ #\space stream)))))
