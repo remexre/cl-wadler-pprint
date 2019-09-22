@@ -238,7 +238,10 @@
                     (stream-output-width stream))))
   (check-type width (or null fixnum))
 
-  (let ((layout-doc (if width (best width 0 doc) (first-layout (list (cons 0 doc))))))
+  (let ((layout-doc (if width
+                        (best width 0 doc)
+                        (first-layout (list (cons 0 doc))))))
+    ; TODO: Is there some way to avoid the duplication here?
     (if stream
         (loop
           for part in layout-doc
@@ -265,3 +268,40 @@
                   (dotimes (i part)
                     (vector-push-extend #\space out)))))
           out))))
+
+;;;
+;;; Convenience macro
+;;;
+
+(defmacro def-pretty-object (class (&key print-object) (&rest slots))
+  (check-type class symbol)
+  (let (forms)
+    ; Define the pretty-object method.
+    (with-gensyms (object)
+      (let ((start (format nil "#<~a " class)))
+        (push
+          `(defmethod pretty-object ((,object ,class))
+             (group
+               (text ,start)
+               (nest ,(length start)
+                 (stack
+                   ,@(iter
+                       (for slot in slots)
+                       (for name = (concatenate 'string ":" (symbol-name slot)))
+                       (collect `(spread
+                                   (text ,name)
+                                   (nest ,(1+ (length name))
+                                     (pretty-object (slot-value ,object ',slot))))))))
+               (text ">")))
+          forms)))
+
+    ; Define the print-object method, if requested.
+    (when print-object
+      (with-gensyms (object stream)
+        (push
+          `(defmethod print-object ((,object ,class) ,stream)
+             (pretty ,stream (pretty-object ,object)))
+          forms)))
+
+    ; Return the whole form.
+    (cons 'progn (nreverse forms))))
