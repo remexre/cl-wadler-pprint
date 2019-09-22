@@ -1,3 +1,4 @@
 (defpackage #:wadler-pprint
   (:use #:cl #:trivia)
-  (:export #:+newline+ #:group #:nest #:pretty #:pretty-object #:text))
+  (:export #:+newline+ #:bracket #:group #:nest #:pretty #:pretty-object
+           #:spread #:stack #:text))

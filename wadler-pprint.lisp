@@ -1,6 +1,13 @@
 (in-package #:wadler-pprint)
 
 ;;;
+;;; Utilities
+;;;
+
+(defun join (list sep)
+  (cdr (loop for x in list nconcing (list sep list))))
+
+;;;
 ;;; The structs used to represent documents.
 ;;;
 
@@ -52,12 +59,12 @@
   (make-nest :width width :doc doc))
 
 (defun text (str)
-  (cdr
-    (loop
-      for part in (uiop:split-string str :separator #(#\newline))
-      nconcing (list +newline+ (make-text :string part)))))
+  (join
+    (mapcar (lambda (str) (make-text :string str))
+            (uiop:split-string str :separator #(#\newline)))
+    +newline+))
 
-(defun group (doc)
+(defun group (&rest doc)
   (make-union-doc
     :lhs (flatten doc)
     :rhs doc))
@@ -73,6 +80,23 @@
     ((eq doc +newline+) (make-text :string " "))
     ((union-doc-p doc)  (flatten (union-doc-lhs doc)))
     (t                  (error 'type-error :datum doc :expected-type 'doc))))
+
+;;;
+;;; Document construction helpers.
+;;;
+
+(defun bracket (l r &rest body)
+  (group
+    (list (text l)
+          (nest 2 (cons +newline+ body))
+          +newline+
+          (text r))))
+
+(defun spread (&rest docs)
+  (join docs (text " ")))
+
+(defun stack (&rest docs)
+  (join docs +newline+))
 
 ;;;
 ;;; Layout of documents.
