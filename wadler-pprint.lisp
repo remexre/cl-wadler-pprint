@@ -275,33 +275,33 @@
 
 (defmacro def-pretty-object (class (&key print-object) (&rest slots))
   (check-type class symbol)
-  (let (forms)
+  (let (forms
+        (object (gensym))
+        (stream (gensym)))
     ; Define the pretty-object method.
-    (with-gensyms (object)
-      (let ((start (format nil "#<~a " class)))
-        (push
-          `(defmethod pretty-object ((,object ,class))
-             (group
-               (text ,start)
-               (nest ,(length start)
-                 (stack
-                   ,@(iter
-                       (for slot in slots)
-                       (for name = (concatenate 'string ":" (symbol-name slot)))
-                       (collect `(spread
-                                   (text ,name)
-                                   (nest ,(1+ (length name))
-                                     (pretty-object (slot-value ,object ',slot))))))))
-               (text ">")))
-          forms)))
+    (let ((start (format nil "#<~a " class)))
+      (push
+        `(defmethod pretty-object ((,object ,class))
+           (group
+             (text ,start)
+             (nest ,(length start)
+               (stack
+                 ,@(loop
+                     for slot in slots
+                     for name = (concatenate 'string ":" (symbol-name slot))
+                     collect `(spread
+                                (text ,name)
+                                (nest ,(1+ (length name))
+                                  (pretty-object (slot-value ,object ',slot)))))))
+             (text ">")))
+        forms))
 
     ; Define the print-object method, if requested.
     (when print-object
-      (with-gensyms (object stream)
-        (push
-          `(defmethod print-object ((,object ,class) ,stream)
-             (pretty ,stream (pretty-object ,object)))
-          forms)))
+      (push
+        `(defmethod print-object ((,object ,class) ,stream)
+           (pretty ,stream (pretty-object ,object)))
+        forms))
 
     ; Return the whole form.
     (cons 'progn (nreverse forms))))

@@ -100,3 +100,14 @@
 
 (def-test list-2 ()
   (is (equal +list-pretty-2+ (pretty nil (pretty-object +test-list+) :width 20))))
+
+(defclass foo ()
+  ((bar :initarg :bar :reader bar)
+   (baz :initarg :baz :reader quux)))
+
+(def-pretty-object foo ()
+  (bar baz))
+
+(def-test object ()
+  (is (equal "#<FOO :BAR 1 :BAZ 2>"
+             (pretty nil (pretty-object (make-instance 'foo :bar 1 :baz 2))))))
