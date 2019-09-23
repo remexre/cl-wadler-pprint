@@ -310,7 +310,7 @@
     (when print-object
       (push
         `(defmethod print-object ((,object ,class) ,stream)
-           (pretty ,stream (pretty-object ,object)))
+           (pretty ,stream ,object))
         forms))
 
     ; Return the whole form.
