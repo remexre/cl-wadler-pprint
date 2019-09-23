@@ -74,23 +74,27 @@
 
 (def-test tree-1 ()
   (is (equal +tree-pretty-1+
-             (pretty nil (pp-tree-1 +tree+) :width 30))))
+             (pretty* nil (pp-tree-1 +tree+) :width 30))))
 
 (def-test tree-1-no-width ()
-  (is (equal +tree-pretty-0+ (pretty nil (pp-tree-1 +tree+)))))
+  (is (equal +tree-pretty-0+ (pretty* nil (pp-tree-1 +tree+)))))
 
 (def-test tree-2 ()
   (is (equal +tree-pretty-2+
-             (pretty nil (pp-tree-2 +tree+) :width 30))))
+             (pretty* nil (pp-tree-2 +tree+) :width 30))))
 
 (def-test tree-2-no-width ()
   ; The same still, since there aren't any groups present.
-  (is (equal +tree-pretty-2+ (pretty nil (pp-tree-2 +tree+)))))
+  (is (equal +tree-pretty-2+ (pretty* nil (pp-tree-2 +tree+)))))
 
 (defvar +test-list+ '(a simple example list))
+(defvar +test-vector+ #(a simple example vector))
 
 (def-test list-1 ()
-  (is (equal "(A SIMPLE EXAMPLE LIST)" (pretty nil (pretty-object +test-list+)))))
+  (is (equal "(A SIMPLE EXAMPLE LIST)" (pretty nil +test-list+))))
+
+(def-test vector-1 ()
+  (is (equal "#(A SIMPLE EXAMPLE VECTOR)" (pretty nil +test-vector+))))
 
 (defvar +list-pretty-2+
   "(A
@@ -98,8 +102,17 @@
  EXAMPLE
  LIST)")
 
+(defvar +vector-pretty-2+
+  "#(A
+  SIMPLE
+  EXAMPLE
+  VECTOR)")
+
 (def-test list-2 ()
-  (is (equal +list-pretty-2+ (pretty nil (pretty-object +test-list+) :width 20))))
+  (is (equal +list-pretty-2+ (pretty nil +test-list+ :width 20))))
+
+(def-test vector-2 ()
+  (is (equal +vector-pretty-2+ (pretty nil +test-vector+ :width 20))))
 
 (defclass foo ()
   ((bar :initarg :bar :reader bar)
@@ -110,4 +123,4 @@
 
 (def-test object ()
   (is (equal "#<FOO :BAR 1 :BAZ 2>"
-             (pretty nil (pretty-object (make-instance 'foo :bar 1 :baz 2))))))
+             (pretty nil (make-instance 'foo :bar 1 :baz 2)))))

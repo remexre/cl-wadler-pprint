@@ -80,6 +80,12 @@
            (text ". ")
            (pretty-object obj)))))
 
+(defmethod pretty-object ((obj vector))
+  (group
+    (text "#(")
+    (nest 2 (apply #'stack (map 'list #'pretty-object obj)))
+    (text ")")))
+
 (defmethod pretty-object ((obj t))
   (text (format nil "~s" obj)))
 
@@ -224,7 +230,11 @@
              layout-doc (cdr layout-doc)))
   (>= width 0))
 
-(defun pretty (stream doc &key width)
+(defun pretty (stream value &key width)
+  "Pretty-prints a VALUE to the given STREAM, with the given WIDTH."
+  (pretty* stream (pretty-object value) :width width))
+
+(defun pretty* (stream doc &key width)
   "Pretty-prints a DOCument to the given STREAM, with the given WIDTH."
 
   (check-type stream (or null string (member t) stream))
