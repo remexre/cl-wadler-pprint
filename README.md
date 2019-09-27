@@ -3,6 +3,27 @@ cl-wadler-pprint
 
 An implementation of ["A Prettier Printer" by Philip Wadler](https://homepages.inf.ed.ac.uk/wadler/papers/prettier/prettier.pdf) in Common Lisp.
 
+Example
+-------
+
+```lisp
+(defclass foo ()
+  ((bar :initarg :bar :reader bar)
+   (baz :initarg :baz :reader quux)))
+
+(def-pretty-object foo ()
+  (bar baz))
+
+; at width 80
+(pretty t (make-instance 'foo :bar 1 :baz 2))
+; #<FOO :BAR 1 :BAZ 2>
+
+; at width 20
+(pretty t (make-instance 'foo :bar 1 :baz 2))
+; #<FOO :BAR 1
+;       :BAZ 2>
+```
+
 TODOs
 -----
 
