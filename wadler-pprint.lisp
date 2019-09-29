@@ -302,7 +302,9 @@
                      collect `(spread
                                 (text ,name)
                                 (nest ,(1+ (length name))
-                                  (pretty-object (slot-value ,object ',slot)))))))
+                                  (if (slot-boundp ,object ',slot)
+                                      (pretty-object (slot-value ,object ',slot))
+                                      (text "#<unbound>")))))))
              (text ">")))
         forms))
 
